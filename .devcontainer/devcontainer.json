@@ -2,7 +2,7 @@
   "name": "TokenPot Base Sepolia Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
   "features": {
-    "ghcr.io/devcontainers-contrib/features/solidity:2": {}
+ //   "ghcr.io/devcontainers-contrib/features/solidity:2": {}
   },
   "postCreateCommand": "npm install -g hardhat && npm install",
   "customizations": {
