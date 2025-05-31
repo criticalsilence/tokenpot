@@ -1,0 +1,27 @@
+{
+  "name": "TokenPot Base Sepolia Dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/solidity:2": {}
+  },
+  "postCreateCommand": "npm install -g hardhat && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "NomicFoundation.hardhat-solidity",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "forwardPorts": [8080, 8545],
+  "portsAttributes": {
+    "8080": {
+      "label": "Frontend",
+      "onAutoForward": "openPreview"
+    },
+    "8545": {
+      "label": "Hardhat Node"
+    }
+  }
+}
