@@ -75,8 +75,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: transform 0.2s ease-out;
-            transform-origin: bottom center; 
+            transition: transform 0.15s ease-in-out; /* Daha hızlı geçiş */
+            transform-origin: top center; /* Dönüş/hareket noktası üst orta */
         }
         .lever-handle {
             width: 40px;
@@ -91,7 +91,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         .slot-lever.pulled {
-            transform: rotate(45deg);
+            transform: translateY(25px) scaleY(0.9); /* Aşağı çekme efekti */
         }
         .connect-wallet-btn, .history-link-btn, .disconnect-wallet-btn {
             background: linear-gradient(to right, #7f00ff, #e100ff); 
@@ -180,8 +180,8 @@
 
             <div class="flex flex-col items-center space-y-3 mt-6 w-full max-w-xs">
                 <input type="number" id="betAmountInput" placeholder="ETH Bahis Miktarı" class="bet-input" step="0.01" min="0.01">
-                <p id="spinResult" class="text-lg h-6 text-center"></p> 
                 <p id="actionMessage" class="text-md h-6 text-yellow-400 text-center"></p> 
+                <p id="spinResult" class="text-lg h-6 text-center font-bold"></p> 
             </div>
             <div class="mt-4 text-center">
                 <p class="game-rules text-sm">Oyun Kuralları: Jackpot için çevir! Kazanma şansı ~1/10. Kazanan havuzun %95'ini alır.</p>
@@ -215,7 +215,7 @@
 
     <script>
         // --- CONFIGURATION ---
-        const YOUR_CONTRACT_ADDRESS = "0x094AC1e7b14804a1109C5A119F5F5fB27f1E94Ff"; // SON DEPLOY ETTİĞİNİZ KONTRAKTIN ADRESİ
+        const YOUR_CONTRACT_ADDRESS = "0x094AC1e7b14804a1109C5A119F5F5fB27f1E94Ff"; 
         const YOUR_CONTRACT_ABI = [
             {
                 "inputs": [
@@ -337,7 +337,7 @@
                 "stateMutability": "nonpayable",
                 "type": "function"
             }
-        ]; // YUKARIDAKİ ABI, YENİ JACKPOT KONTRAKTINIZA UYGUN OLARAK GÜNCELLENDİ
+        ];
         
         const TARGET_CHAIN_ID_DECIMAL = '300'; 
         const TARGET_CHAIN_ID_HEX = '0x12c'; 
@@ -474,6 +474,11 @@
                     connectWalletBtn.classList.add('hidden'); 
                     disconnectWalletBtn.classList.remove('hidden'); 
                     
+                    if (YOUR_CONTRACT_ADDRESS === "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN" || YOUR_CONTRACT_ABI.length === 0) {
+                        showNotification("Konfigürasyon Eksik", "Lütfen JavaScript içinde kontrat adresi ve ABI'yi güncelleyin.");
+                        slotLever.style.cursor = 'not-allowed';
+                        return;
+                    }
                     tokenPotContract = new ethers.Contract(YOUR_CONTRACT_ADDRESS, YOUR_CONTRACT_ABI, signer);
                     slotLever.style.cursor = 'pointer'; 
                     showNotification('Başarılı', 'Cüzdan başarıyla bağlandı ve kontrat yüklendi!');
@@ -547,33 +552,46 @@
         }
 
         // --- GAME LOGIC ---
-        function animateReel(reelElement, duration, finalSymbolEmoji) {
+        let reelAnimationTimeoutIds = [null, null, null]; 
+
+        function animateReel(reelElement, duration, finalSymbolEmoji, reelIndex, winInfo) {
             const startTime = Date.now();
             const initialSymbols = SYMBOLS_EMOJI.slice(); 
+
+            // Önceki animasyonu temizle (varsa)
+            if (reelAnimationTimeoutIds[reelIndex]) {
+                clearTimeout(reelAnimationTimeoutIds[reelIndex]); // setTimeout kullanıyorsak
+                // Veya cancelAnimationFrame(reelAnimationTimeoutIds[reelIndex]) eğer rAF kullanıyorsak
+            }
 
             function spin() {
                 const elapsedTime = Date.now() - startTime;
                 if (elapsedTime < duration) {
                     const randomIndex = Math.floor(Math.random() * initialSymbols.length);
                     reelElement.textContent = initialSymbols[randomIndex];
-                    requestAnimationFrame(spin);
+                    reelAnimationTimeoutIds[reelIndex] = requestAnimationFrame(spin); // rAF kullanıyoruz
                 } else {
                     reelElement.textContent = finalSymbolEmoji;
-                    if (reelsElements.indexOf(reelElement) === reelsElements.length - 1) {
+                    if (reelIndex === reelsElements.length - 1) { // Son makara durduğunda
                         isSpinning = false; 
                         slotLever.classList.remove('pulled'); 
                         if (signer) slotLever.style.cursor = 'pointer'; 
+                        
+                        // Sonuçları ve bildirimi burada göster
+                        spinResultEl.textContent = winInfo.message;
+                        showNotification("Spin Sonucu", winInfo.message);
+                        actionMessageEl.textContent = ""; // Aksiyon mesajını temizle
                     }
                 }
             }
             spin();
         }
 
-        function startReelAnimations(finalSymbolIndices) { 
+        function startReelAnimations(finalSymbolIndices, winInfo) { 
             const durations = [1500, 2500, 3500]; 
             reelsElements.forEach((reelWrapper, index) => {
                 const finalSymbolEmoji = SYMBOLS_EMOJI[finalSymbolIndices[index]] || '❓';
-                animateReel(reelWrapper, durations[index], finalSymbolEmoji);
+                animateReel(reelWrapper, durations[index], finalSymbolEmoji, index, winInfo);
             });
         }
 
@@ -586,7 +604,7 @@
                 showNotification('Hata', 'Lütfen önce cüzdanınızı bağlayın.');
                 return;
             }
-             if (YOUR_CONTRACT_ADDRESS === "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN") { // Güvenlik kontrolü
+             if (YOUR_CONTRACT_ADDRESS === "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN") {
                 showNotification("Yapılandırma Eksik", "Lütfen JavaScript içinde doğru kontrat adresi ve ABI'yi ayarlayın.");
                 return;
             }
@@ -640,7 +658,6 @@
             if (!tokenPotContract) return;
             tokenPotContract.removeAllListeners("SpinResult");
 
-            // Yeni Event parametreleri: player, betAmount, didWin, playerPayoutAmount, operatorPayoutAmount, resultSymbolsIndicesBigInt
             tokenPotContract.on("SpinResult", (player, betAmount, didWin, playerPayoutAmount, operatorPayoutAmount, resultSymbolsIndicesBigInt, event) => {
                 console.log("SpinResult Event Alındı:", { 
                     player, 
@@ -653,29 +670,19 @@
                 });
 
                 if (player.toLowerCase() === currentUserAddress.toLowerCase()) {
-                    actionMessageEl.textContent = "Tahsil edildi! Sonuçlar..."; 
+                    actionMessageEl.textContent = "Tahsil edildi! Sonuçlar işleniyor..."; 
                     
                     const finalIndices = resultSymbolsIndicesBigInt.map(index => Number(BigInt(index))); 
-                    startReelAnimations(finalIndices); 
-
-                    let message = "";
-                    if (didWin) { // Kontrattan gelen 'didWin' boolean değerini kullanıyoruz
-                        message = `🎉 JACKPOT! ${ethers.formatEther(playerPayoutAmount)} ETH Kazandınız! 🎉`;
-                    } else {
-                        message = `Kaybettiniz. Tekrar Deneyin!`;
-                    }
+                    const winMessage = didWin ? `🎉 JACKPOT! ${ethers.formatEther(playerPayoutAmount)} ETH Kazandınız! 🎉` : `Kaybettiniz. Tekrar Deneyin!`;
                     
-                    setTimeout(() => { 
-                       spinResultEl.textContent = message; 
-                    }, 3600); // En uzun makara animasyonu süresinden biraz daha fazla bekle
-
-                    showNotification("Spin Sonucu", message);
+                    // Kazanma bilgisini ve mesajı animasyon fonksiyonuna aktar
+                    startReelAnimations(finalIndices, { didWin, message: winMessage }); 
 
                     const txData = {
                         id: event.log.transactionHash,
                         user: player,
                         bet: parseFloat(ethers.formatEther(betAmount)),
-                        win: didWin, // Kontrattan gelen değeri kullan
+                        win: didWin, 
                         prize: parseFloat(ethers.formatEther(playerPayoutAmount)), 
                         symbols: finalIndices.map(index => SYMBOLS_EMOJI[index] || '❓'), 
                         timestamp: new Date().toISOString()
@@ -684,7 +691,7 @@
                     if (transactions.length > 50) transactions.pop();
                     renderTransactionList();
                     saveLocalTransactions();
-                    updatePoolBalance(); // Havuz bakiyesini hemen güncelle
+                    updatePoolBalance(); 
                 }
             });
             console.log("SpinResult event dinleyicisi aktif.");
@@ -769,10 +776,12 @@
                         }
                     }
                 });
-
+                
                 // Sayfa yüklendiğinde bağlı olan bir hesap varsa otomatik bağlanmayı dene
+                // Bu, kullanıcı deneyimini iyileştirebilir ancak bazen istenmeyen pop-up'lara neden olabilir.
+                // Eğer bir cüzdan zaten seçiliyse (örneğin sayfa yenilendiğinde) otomatik bağlan.
                 if (window.ethereum.selectedAddress) {
-                    connectWallet();
+                     setTimeout(connectWallet, 200); // Küçük bir gecikme ile dene
                 }
             }
         });
