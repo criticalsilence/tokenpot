@@ -1,108 +1,93 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; // OpenZeppelin'den ReentrancyGuard'ı import ediyoruz
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract TokenPot is ReentrancyGuard {
-    address public owner;
-    uint256 public operatorFeePercent = 5; // %5 operatör ücreti
+    address public owner; // Kontratın sahibi (operatör ücretleri bu adrese gidecek)
+    uint256 public constant OPERATOR_FEE_PERCENT = 5; // %5 operatör ücreti
     uint256 public minimumBet;
 
-    // Aktif spin isteklerini ve oyuncularını takip etmek için mapping
-    // Bu, Chainlink VRF gibi bir asenkron rastgelelik kaynağı kullanılıyorsa daha anlamlı olur.
-    // Mevcut senkronize _resolveSpin için zorunlu değil ama iyi bir pratik.
-    mapping(bytes32 => address) public spinRequests;
+    // Yaklaşık 1/10 kazanma şansı için (0-9 arası rastgele sayı, 0 gelirse kazanır)
+    uint256 private constant WIN_CHANCE_MODULO = 10;
+    uint256 private constant WINNING_NUMBER = 0; // Bu sayıya denk gelirse kazanır
 
-    // Event'ler: Blockchain üzerinde gerçekleşen önemli olayları loglamak ve
-    // ön yüz (frontend) tarafından dinlenebilmek için kullanılır.
-    event SpinRequested(bytes32 indexed requestId, address indexed player);
     event SpinResult(
-        bytes32 indexed requestId,
         address indexed player,
         uint256 betAmount,
-        uint256 prizeAmount,
-        uint8[3] resultSymbols // Dönen sembollerin indisleri
+        bool didWin,
+        uint256 playerPayoutAmount,
+        uint256 operatorPayoutAmount,
+        uint8[3] resultSymbols // Görsel amaçlı semboller
     );
 
     constructor(uint256 _minimumBet) {
-        owner = msg.sender; // Kontratı deploy eden kişi sahibi olur
+        owner = msg.sender;
         minimumBet = _minimumBet;
     }
 
-    // Oyuncunun bahis yapıp makaraları çevirdiği ana fonksiyon
-    // 'payable' anahtar kelimesi, bu fonksiyona ETH gönderilebileceği anlamına gelir.
-    // 'nonReentrant' değiştiricisi, re-entrancy saldırılarına karşı koruma sağlar.
     function betAndSpin() public payable nonReentrant {
-        require(msg.value >= minimumBet, "Bet is below minimum"); // Gönderilen ETH'nin minimum bahisten fazla olmasını kontrol et
+        require(msg.value >= minimumBet, "Bet is below minimum");
+        
+        // GÜVENLİK UYARISI: Aşağıdaki rastgele sayı üretimi GÜVENLİ DEĞİLDİR.
+        // Gerçek bir jackpot sistemi için Chainlink VRF kullanılmalıdır.
+        // Bu sadece bir DEMO ve geliştirme amaçlıdır.
+        uint256 pseudoRandomForWin = uint256(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, msg.sender, address(this).balance, block.number)));
+        
+        bool didWin = (pseudoRandomForWin % WIN_CHANCE_MODULO) == WINNING_NUMBER;
 
-        // Basit bir requestId oluşturma (gerçek bir uygulamada daha güvenli bir yöntem gerekebilir)
-        bytes32 requestId = keccak256(abi.encodePacked(block.timestamp, msg.sender, block.number));
-        spinRequests[requestId] = msg.sender;
+        uint256 playerPayout = 0;
+        uint256 operatorPayout = 0;
+        // Oyuncunun bahsi zaten kontrat bakiyesine eklendiği için address(this).balance doğru havuz miktarını verir.
+        uint256 currentPoolBalanceIncludingCurrentBet = address(this).balance; 
 
-        emit SpinRequested(requestId, msg.sender); // Spin isteği event'ini yayınla
+        if (didWin) {
+            // Havuzun %95'i oyuncuya, %5'i operatöre
+            playerPayout = (currentPoolBalanceIncludingCurrentBet * (100 - OPERATOR_FEE_PERCENT)) / 100;
+            operatorPayout = currentPoolBalanceIncludingCurrentBet - playerPayout; // Kalan %5
 
-        // Spin sonucunu hemen hesapla ve işle (senkronize)
-        _resolveSpin(requestId, msg.value);
-    }
-
-    // Spin sonucunu belirleyen ve ödemeyi yapan özel (private) fonksiyon
-    function _resolveSpin(bytes32 requestId, uint256 betAmount) private {
-        address player = spinRequests[requestId];
-        require(player != address(0), "Invalid request or already processed"); // Geçerli bir istek mi kontrol et
-
-        // İsteği işlendi olarak işaretle (tekrar işlenmesini önlemek için)
-        // Eğer Chainlink VRF gibi bir yapı kullanılsaydı bu adım daha kritik olurdu.
-        delete spinRequests[requestId]; 
-
-        // GÜVENLİK UYARISI: Aşağıdaki rastgele sayı üretimi blockchain üzerinde
-        // tahmin edilebilir ve GÜVENLİ DEĞİLDİR. Bu sadece bir DEMO içindir.
-        // Gerçek bir para ile çalışan slot makinesi için MUTLAKA
-        // Chainlink VRF gibi zincir dışı, doğrulanabilir bir rastgelelik kaynağı kullanılmalıdır.
-        uint256 pseudoRandom = uint256(keccak256(abi.encodePacked(requestId, block.prevrandao, block.timestamp)));
-
-        uint8[3] memory symbols; // 3 makara için sembol indisleri
-        symbols[0] = uint8(pseudoRandom % 11);          // 0-10 arası bir sayı (11 sembolümüz olduğunu varsayıyoruz)
-        symbols[1] = uint8((pseudoRandom / 11) % 11);
-        symbols[2] = uint8((pseudoRandom / 11 / 11) % 11);
-
-        uint256 prizeAmount = 0;
-
-        // Basit Kazanç Mantığı: 3 aynı "kazanan" sembol (0-4 arası indisler kazanan semboller olsun)
-        if (symbols[0] < 5 && symbols[0] == symbols[1] && symbols[1] == symbols[2]) {
-            uint multiplier = _getMultiplier(symbols[0]); // Sembole göre çarpan al
-            uint grossPrize = betAmount * multiplier; // Brüt ödül
-            uint operatorFee = (grossPrize * operatorFeePercent) / 100; // Operatör ücreti hesapla
-            prizeAmount = grossPrize - operatorFee; // Net ödül
-
-            // Oyuncuya kazancını gönder
-            if (prizeAmount > 0) {
-                (bool success, ) = player.call{value: prizeAmount}("");
-                require(success, "Failed to send prize to player");
+            if (playerPayout > 0) {
+                (bool successPlayer, ) = msg.sender.call{value: playerPayout}("");
+                require(successPlayer, "Failed to send prize to player");
             }
+            if (operatorPayout > 0) {
+                (bool successOperator, ) = owner.call{value: operatorPayout}("");
+                require(successOperator, "Failed to send fee to owner");
+            }
+        } else {
+            // Kaybetme durumunda, oyuncunun bahsi havuzda kalır. Operatör bu durumda doğrudan bir pay almaz.
+            // Eğer her bahisten %5 alınacaksa burası değişmeliydi, ancak isteğiniz jackpot'tan pay olduğu için böyle bırakıyoruz.
         }
 
-        // Spin sonucu event'ini yayınla
-        emit SpinResult(requestId, player, betAmount, prizeAmount, symbols);
+        // Görsel amaçlı rastgele semboller üret (kazanıp kazanmadığını etkilemez)
+        uint256 pseudoRandomForSymbols = uint256(keccak256(abi.encodePacked(pseudoRandomForWin, block.coinbase, msg.sender))); // Farklı bir seed
+        uint8[3] memory symbols;
+        symbols[0] = uint8(pseudoRandomForSymbols % 11); // 11: SYMBOLS_EMOJI.length
+        symbols[1] = uint8((pseudoRandomForSymbols / 11) % 11);
+        symbols[2] = uint8((pseudoRandomForSymbols / 11 / 11) % 11);
+        
+        emit SpinResult(msg.sender, msg.value, didWin, playerPayout, operatorPayout, symbols);
     }
 
-    // Sembol indisine göre kazanç çarpanını döndüren özel fonksiyon
-    function _getMultiplier(uint8 symbolIndex) private pure returns (uint) {
-        if (symbolIndex == 0) return 5;  // Örneğin: 🍒 ise 5x
-        if (symbolIndex == 1) return 10; // Örneğin: 🍋 ise 10x
-        if (symbolIndex == 2) return 15; // Örneğin: 🍊 ise 15x
-        if (symbolIndex == 3) return 20; // Örneğin: 🍇 ise 20x
-        if (symbolIndex == 4) return 50; // Örneğin: ⭐ ise 50x
-        return 0; // Diğer semboller için kazanç yok
-    }
-
-    // Kontrat sahibinin biriken operatör ücretlerini çekmesi için fonksiyon
-    function withdrawFees() public nonReentrant {
+    // Kontrat sahibinin, birikmiş olabilecek (şu anki mantıkta birikmez)
+    // veya doğrudan gönderilemeyen ücretleri çekmesi için.
+    function withdrawOwnerFees() public nonReentrant {
         require(msg.sender == owner, "Not the owner");
-        // Bu fonksiyonun mantığı daha sonra eklenebilir. 
-        // Örneğin, kontratta biriken operatör payını sahibin adresine gönderebilir.
-        // Şu an için, kontratın bakiyesinden direkt çekim yapmıyoruz,
-        // çünkü operatör ücreti `prizeAmount` hesaplanırken zaten düşülüyor.
-        // Eğer her bahisten bir pay alınacaksa veya farklı bir ücret modeli varsa bu fonksiyonun içi doldurulur.
-        // Şimdilik sadece sahibinin çağırabileceği bir yer tutucu.
+        // Mevcut durumda, kazanç anında ücretler sahibe transfer edildiği için bu fonksiyon
+        // genellikle kontratta ETH bırakmaz. Ancak, doğrudan kontrata ETH gönderilmesi gibi
+        // nadir durumlar için veya gelecekteki farklı ücret modelleri için bir güvence olabilir.
+        uint256 balance = address(this).balance;
+        if (balance > 0) {
+            (bool success, ) = owner.call{value: balance}("");
+            require(success, "Withdrawal failed");
+        }
     }
+
+    function setMinimumBet(uint256 _newMinimumBet) public {
+        require(msg.sender == owner, "Not the owner");
+        minimumBet = _newMinimumBet;
+    }
+
+    receive() external payable {}
+    fallback() external payable {}
 }

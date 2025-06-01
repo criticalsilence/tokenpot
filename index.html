@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenPot - Web3 Slot Makinesi</title>
+    <title>TokenPot - Jackpot Slot Makinesi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a2e; /* Koyu tema arka planı */
-            color: #e0e0e0; /* Açık renk metin */
+            background-color: #1a1a2e; 
+            color: #e0e0e0; 
         }
         .slot-machine-container {
             background: linear-gradient(145deg, #1f1f38, #2a2a4c);
@@ -18,51 +18,103 @@
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border: 1px solid #3a3a5c;
+            display: flex; 
+            align-items: flex-start; 
+            gap: 20px; 
+        }
+        .machine-body {
+            background-color: #2c2c44;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #4a4a6c;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative; 
+            width: auto; 
+        }
+        .reels-container {
+            display: flex;
+            gap: 15px; 
+            margin-bottom: 20px;
+            background-color: #111827; 
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #374151;
         }
         .reel {
-            width: 100px; /* Genişletilmiş makara */
-            height: 120px; /* Yüksekliği artırılmış makara */
-            background-color: #2c2c44;
+            width: 90px; 
+            height: 110px; 
+            background-color: #e0e0e0; 
+            color: #1a1a2e; 
             border: 2px solid #4a4a6c;
             border-radius: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 50px; /* Sembol boyutu büyütüldü */
+            font-size: 45px; 
             overflow: hidden;
             position: relative;
         }
-        .reel-symbols {
-            transition: transform 0.1s ease-in-out;
-        }
-        .reel-symbol {
-            height: 120px;
+        .reel-symbols-wrapper { 
+            position: absolute;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        .connect-wallet-btn, .spin-btn, .history-link-btn, .disconnect-wallet-btn {
-            background: linear-gradient(to right, #7f00ff, #e100ff); /* Mor-pembe gradient */
+        .slot-lever {
+            width: 30px;
+            height: 150px;
+            background: linear-gradient(to bottom, #c0c0c0, #808080); 
+            border: 2px solid #505050;
+            border-radius: 15px 15px 5px 5px;
+            position: absolute;
+            right: -50px; 
+            top: 50px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s ease-out;
+            transform-origin: bottom center; 
+        }
+        .lever-handle {
+            width: 40px;
+            height: 40px;
+            background-color: #d9534f; 
+            border-radius: 50%;
+            position: absolute;
+            top: -20px; 
+            left: 50%;
+            transform: translateX(-50%);
+            border: 2px solid #a94442;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .slot-lever.pulled {
+            transform: rotate(45deg);
+        }
+        .connect-wallet-btn, .history-link-btn, .disconnect-wallet-btn {
+            background: linear-gradient(to right, #7f00ff, #e100ff); 
             color: white;
             font-weight: bold;
-            padding: 12px 25px;
-            border-radius: 10px;
+            padding: 10px 20px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(192, 0, 255, 0.3);
+            box-shadow: 0 3px 10px rgba(192, 0, 255, 0.3);
         }
-        .connect-wallet-btn:hover, .spin-btn:hover, .history-link-btn:hover, .disconnect-wallet-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(192, 0, 255, 0.5);
+        .connect-wallet-btn:hover, .history-link-btn:hover, .disconnect-wallet-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(192, 0, 255, 0.4);
         }
         .disconnect-wallet-btn {
-            background: linear-gradient(to right, #ff7f00, #ffc100); /* Turuncu gradient */
-            padding: 8px 15px; /* Daha küçük buton */
+            background: linear-gradient(to right, #ff7f00, #ffc100);
+            padding: 8px 15px;
             font-size: 0.9em;
             margin-left: 10px;
         }
-        .connect-wallet-btn:disabled, .spin-btn:disabled {
+        .connect-wallet-btn:disabled {
             background: #4a4a6c;
             cursor: not-allowed;
             box-shadow: none;
@@ -74,96 +126,83 @@
             border-radius: 8px;
             padding: 10px;
             text-align: center;
+            width: 100%;
+        }
+        .info-panel { 
+            width: 300px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         .tx-item {
-            background-color: #25253f;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 8px;
-            border-left: 4px solid;
+            background-color: #25253f; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid;
         }
-        .tx-win {
-            border-left-color: #28a745; /* Yeşil */
-        }
-        .tx-lose {
-            border-left-color: #dc3545; /* Kırmızı */
-        }
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        .status-win {
-            background-color: #28a745;
-        }
-        .status-lose {
-            background-color: #dc3545;
-        }
+        .tx-win { border-left-color: #28a745; }
+        .tx-lose { border-left-color: #dc3545; }
+        .status-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-win { background-color: #28a745; }
+        .status-lose { background-color: #dc3545; }
         .pool-display, .wallet-info {
-            background-color: #25253f;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-            border: 1px solid #3a3a5c;
+            background-color: #25253f; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #3a3a5c;
         }
-        .game-rules, .github-link {
-            font-size: 0.9em;
-            color: #a0a0c0;
-        }
+        .game-rules, .github-link { font-size: 0.9em; color: #a0a0c0; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="slot-machine-container w-full max-w-3xl">
-        <header class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">TokenPot</h1>
-            <button id="connectWalletBtn" class="connect-wallet-btn">Cüzdana Bağlan</button>
-        </header>
+    <div class="slot-machine-container w-full max-w-4xl">
+        <div class="flex-grow flex flex-col items-center">
+            <header class="w-full flex justify-between items-center mb-6">
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">TokenPot Jackpot</h1>
+                <button id="connectWalletBtn" class="connect-wallet-btn">Cüzdana Bağlan</button>
+            </header>
 
-        <div id="walletInfo" class="wallet-info hidden">
-            <div class="flex justify-center items-center">
-                <div>
-                    <p>Bağlı Adres: <span id="userAddress" class="font-mono"></span></p>
-                    <p>Ağ: <span id="networkName" class="font-mono"></span></p>
+            <div id="walletInfo" class="wallet-info hidden w-full">
+                <div class="flex justify-center items-center">
+                    <div>
+                        <p>Bağlı Adres: <span id="userAddress" class="font-mono text-sm"></span></p>
+                        <p>Ağ: <span id="networkName" class="font-mono text-sm"></span></p>
+                    </div>
+                    <button id="disconnectWalletBtn" class="disconnect-wallet-btn">Çıkış Yap</button>
                 </div>
-                <button id="disconnectWalletBtn" class="disconnect-wallet-btn">Çıkış Yap</button>
             </div>
-        </div>
-
-        <div class="pool-display">
-            <h2 class="text-xl font-semibold">Havuzda Biriken ETH (Kontrat Bakiyesi)</h2>
-            <p id="poolBalance" class="text-3xl font-bold">0.00 ETH</p>
-        </div>
-        
-        <main class="flex flex-col md:flex-row items-center md:items-start justify-around gap-6">
-            <div class="flex flex-col items-center">
-                <div class="flex space-x-4 mb-6">
-                    <div id="reel1" class="reel"><div class="reel-symbols">❓</div></div>
-                    <div id="reel2" class="reel"><div class="reel-symbols">❓</div></div>
-                    <div id="reel3" class="reel"><div class="reel-symbols">❓</div></div>
+            
+            <div class="machine-body mt-4">
+                <div class="reels-container">
+                    <div id="reel1" class="reel"><div class="reel-symbols-wrapper">❓</div></div>
+                    <div id="reel2" class="reel"><div class="reel-symbols-wrapper">❓</div></div>
+                    <div id="reel3" class="reel"><div class="reel-symbols-wrapper">❓</div></div>
                 </div>
-
-                <div class="flex flex-col items-center space-y-4 w-full max-w-xs">
-                    <input type="number" id="betAmountInput" placeholder="ETH Bahis Miktarı" class="bet-input w-full" step="0.01" min="0.01">
-                    <button id="spinBtn" class="spin-btn w-full" disabled>Çevir!</button>
-                </div>
-                <p id="spinResult" class="mt-4 text-lg h-6"></p> <div class="mt-4 text-center">
-                    <p class="game-rules text-sm">Oyun Kuralları: 3 aynı kazanan sembolü yakala! Kazançlardan %5 işletme ücreti alınır.</p>
-                    <a href="https://github.com/criticalsilence/tokenpot" target="_blank" class="github-link text-purple-400 hover:text-purple-300 underline">GitHub'da Açık Kaynak Kodları</a>
+                <div id="slotLever" class="slot-lever">
+                    <div class="lever-handle"></div>
                 </div>
             </div>
 
-            <div class="w-full md:w-2/5">
-                <h2 class="text-2xl font-semibold mb-3 text-center md:text-left">Son İşlemler</h2>
-                <div id="transactionList" class="space-y-2 max-h-[280px] overflow-y-auto pr-2"> </div>
-                <div class="mt-4 text-center">
+            <div class="flex flex-col items-center space-y-3 mt-6 w-full max-w-xs">
+                <input type="number" id="betAmountInput" placeholder="ETH Bahis Miktarı" class="bet-input" step="0.01" min="0.01">
+                <p id="spinResult" class="text-lg h-6 text-center"></p> 
+                <p id="actionMessage" class="text-md h-6 text-yellow-400 text-center"></p> 
+            </div>
+            <div class="mt-4 text-center">
+                <p class="game-rules text-sm">Oyun Kuralları: Jackpot için çevir! Kazanma şansı ~1/10. Kazanan havuzun %95'ini alır.</p>
+                <a href="https://github.com/criticalsilence/tokenpot" target="_blank" class="github-link text-purple-400 hover:text-purple-300 underline">GitHub'da Açık Kaynak Kodları</a>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="pool-display">
+                <h2 class="text-xl font-semibold">JACKPOT HAVUZU</h2>
+                <p id="poolBalance" class="text-3xl font-bold">0.00 ETH</p>
+            </div>
+            <div>
+                <h2 class="text-xl font-semibold mb-2 text-center">Son İşlemler</h2>
+                <div id="transactionList" class="space-y-2 max-h-[280px] overflow-y-auto pr-2">
+                    </div>
+                <div class="mt-3 text-center">
                      <a href="history.html" class="history-link-btn inline-block">Tüm İşlem Geçmişi</a>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
@@ -176,153 +215,133 @@
 
     <script>
         // --- CONFIGURATION ---
-        const YOUR_CONTRACT_ADDRESS = "0x18A541bf5174Cd930b5430199560Ac358c6dB077"; 
+        const YOUR_CONTRACT_ADDRESS = "0x094AC1e7b14804a1109C5A119F5F5fB27f1E94Ff"; // SON DEPLOY ETTİĞİNİZ KONTRAKTIN ADRESİ
         const YOUR_CONTRACT_ABI = [
-          {
-            "inputs": [
-              {
-                "internalType": "uint256",
-                "name": "_minimumBet",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-          },
-          {
-            "anonymous": false,
-            "inputs": [
-              {
-                "indexed": true,
-                "internalType": "bytes32",
-                "name": "requestId",
-                "type": "bytes32"
-              },
-              {
-                "indexed": true,
-                "internalType": "address",
-                "name": "player",
-                "type": "address"
-              }
-            ],
-            "name": "SpinRequested",
-            "type": "event"
-          },
-          {
-            "anonymous": false,
-            "inputs": [
-              {
-                "indexed": true,
-                "internalType": "bytes32",
-                "name": "requestId",
-                "type": "bytes32"
-              },
-              {
-                "indexed": true,
-                "internalType": "address",
-                "name": "player",
-                "type": "address"
-              },
-              {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "betAmount",
-                "type": "uint256"
-              },
-              {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "prizeAmount",
-                "type": "uint256"
-              },
-              {
-                "indexed": false,
-                "internalType": "uint8[3]",
-                "name": "resultSymbols",
-                "type": "uint8[3]"
-              }
-            ],
-            "name": "SpinResult",
-            "type": "event"
-          },
-          {
-            "inputs": [],
-            "name": "betAndSpin",
-            "outputs": [],
-            "stateMutability": "payable",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "minimumBet",
-            "outputs": [
-              {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "operatorFeePercent",
-            "outputs": [
-              {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "owner",
-            "outputs": [
-              {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [
-              {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-              }
-            ],
-            "name": "spinRequests",
-            "outputs": [
-              {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "withdrawFees",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-          }
-        ];
+            {
+                "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "_minimumBet",
+                    "type": "uint256"
+                }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "player",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "betAmount",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "bool",
+                    "name": "didWin",
+                    "type": "bool"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "playerPayoutAmount",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "operatorPayoutAmount",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint8[3]",
+                    "name": "resultSymbols",
+                    "type": "uint8[3]"
+                }
+                ],
+                "name": "SpinResult",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "OPERATOR_FEE_PERCENT",
+                "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "betAndSpin",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "minimumBet",
+                "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "_newMinimumBet",
+                    "type": "uint256"
+                }
+                ],
+                "name": "setMinimumBet",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawOwnerFees",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ]; // YUKARIDAKİ ABI, YENİ JACKPOT KONTRAKTINIZA UYGUN OLARAK GÜNCELLENDİ
         
         const TARGET_CHAIN_ID_DECIMAL = '300'; 
-        const TARGET_CHAIN_ID_HEX = '0x12c'; // zkSync Sepolia Chain ID (Hexadecimal)
+        const TARGET_CHAIN_ID_HEX = '0x12c'; 
         const TARGET_NETWORK_NAME = 'zkSync Sepolia Testnet';
-        // Aşağıdaki RPC ve Explorer URL'leri, ağı otomatik ekleme özelliği için kullanılır.
         const ZKSYNC_SEPOLIA_RPC_URL = 'https://sepolia.era.zksync.dev'; 
         const ZKSYNC_SEPOLIA_EXPLORER_URL = 'https://sepolia.explorer.zksync.io/';
 
@@ -331,12 +350,12 @@
         // --- DOM ELEMENTS ---
         const connectWalletBtn = document.getElementById('connectWalletBtn');
         const disconnectWalletBtn = document.getElementById('disconnectWalletBtn'); 
-        const spinBtn = document.getElementById('spinBtn');
+        const slotLever = document.getElementById('slotLever'); 
         const betAmountInput = document.getElementById('betAmountInput');
-        const reels = [
-            document.getElementById('reel1').querySelector('.reel-symbols'), 
-            document.getElementById('reel2').querySelector('.reel-symbols'), 
-            document.getElementById('reel3').querySelector('.reel-symbols')
+        const reelsElements = [ 
+            document.getElementById('reel1').querySelector('.reel-symbols-wrapper'), 
+            document.getElementById('reel2').querySelector('.reel-symbols-wrapper'), 
+            document.getElementById('reel3').querySelector('.reel-symbols-wrapper')
         ];
         const poolBalanceEl = document.getElementById('poolBalance');
         const transactionListEl = document.getElementById('transactionList');
@@ -344,6 +363,7 @@
         const networkNameEl = document.getElementById('networkName');
         const walletInfoEl = document.getElementById('walletInfo');
         const spinResultEl = document.getElementById('spinResult');
+        const actionMessageEl = document.getElementById('actionMessage');
         
         const notificationModal = document.getElementById('notificationModal');
         const notificationTitle = document.getElementById('notificationTitle');
@@ -356,10 +376,11 @@
         let currentUserAddress;
         let tokenPotContract;
         let transactions = []; 
+        let isSpinning = false; 
 
         // --- LOCALSTORAGE ---
         function loadLocalTransactions() {
-            const storedTransactions = localStorage.getItem('tokenpot_local_transactions');
+            const storedTransactions = localStorage.getItem('tokenpot_jackpot_transactions'); 
             if (storedTransactions) {
                 transactions = JSON.parse(storedTransactions);
             }
@@ -367,7 +388,7 @@
         }
 
         function saveLocalTransactions() {
-            localStorage.setItem('tokenpot_local_transactions', JSON.stringify(transactions));
+            localStorage.setItem('tokenpot_jackpot_transactions', JSON.stringify(transactions));
         }
         
         // --- NOTIFICATIONS ---
@@ -394,7 +415,7 @@
                 });
                 return true;
             } catch (switchError) {
-                if (switchError.code === 4902) { // Ağ MetaMask'te tanımlı değilse
+                if (switchError.code === 4902) { 
                     try {
                         await window.ethereum.request({
                             method: 'wallet_addEthereumChain',
@@ -403,16 +424,12 @@
                                     chainId: TARGET_CHAIN_ID_HEX,
                                     chainName: TARGET_NETWORK_NAME,
                                     rpcUrls: [ZKSYNC_SEPOLIA_RPC_URL],
-                                    nativeCurrency: {
-                                        name: 'Ethereum',
-                                        symbol: 'ETH',
-                                        decimals: 18,
-                                    },
+                                    nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
                                     blockExplorerUrls: [ZKSYNC_SEPOLIA_EXPLORER_URL],
                                 },
                             ],
                         });
-                        return true; // Ağı ekledikten sonra tekrar switch denemeye gerek yok, genellikle otomatik geçer.
+                        return true; 
                     } catch (addError) {
                         console.error("Ağ ekleme hatası:", addError);
                         showNotification('Ağ Eklenemedi', `MetaMask'e ${TARGET_NETWORK_NAME} ağı eklenemedi. Hata: ${addError.message}`);
@@ -420,35 +437,31 @@
                     }
                 } else {
                     console.error("Ağ değiştirme hatası:", switchError);
-                    showNotification('Ağ Değiştirilemedi', `${TARGET_NETWORK_NAME} ağına geçiş yapılamadı. Lütfen MetaMask üzerinden manuel olarak ağı değiştirin.`);
+                    showNotification('Ağ Değiştirilemedi', `${TARGET_NETWORK_NAME} ağına geçiş yapılamadı.`);
                     return false;
                 }
             }
         }
 
         async function connectWallet() {
+            if (isSpinning) return;
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     provider = new ethers.BrowserProvider(window.ethereum);
-                    
-                    // Önce kullanıcıdan hesap izni iste
                     await provider.send("eth_requestAccounts", []); 
                     
                     let network = await provider.getNetwork();
                     if (network.chainId.toString() !== TARGET_CHAIN_ID_DECIMAL) {
-                        showNotification('Ağ Değiştiriliyor...', `${TARGET_NETWORK_NAME} ağına geçiş yapılıyor. Lütfen MetaMask'teki istemi onaylayın.`);
+                        showNotification('Ağ Değiştiriliyor...', `${TARGET_NETWORK_NAME} ağına geçiş yapılıyor...`);
                         const switched = await switchToCorrectNetwork();
                         if (!switched) {
-                            disconnectWalletLogic();
-                            return; 
+                            disconnectWalletLogic(); return; 
                         }
-                        // Ağ değiştikten sonra provider ve network bilgilerini yeniden al
                         provider = new ethers.BrowserProvider(window.ethereum); 
                         network = await provider.getNetwork(); 
                         if (network.chainId.toString() !== TARGET_CHAIN_ID_DECIMAL) {
-                            showNotification('Hata', `${TARGET_NETWORK_NAME} ağına geçiş yapılamadı. Lütfen manuel olarak kontrol edin.`);
-                            disconnectWalletLogic();
-                            return;
+                            showNotification('Hata', `${TARGET_NETWORK_NAME} ağına geçiş yapılamadı.`);
+                            disconnectWalletLogic(); return;
                         }
                     }
                     
@@ -462,7 +475,7 @@
                     disconnectWalletBtn.classList.remove('hidden'); 
                     
                     tokenPotContract = new ethers.Contract(YOUR_CONTRACT_ADDRESS, YOUR_CONTRACT_ABI, signer);
-                    spinBtn.disabled = false;
+                    slotLever.style.cursor = 'pointer'; 
                     showNotification('Başarılı', 'Cüzdan başarıyla bağlandı ve kontrat yüklendi!');
                     updatePoolBalance(); 
                     listenForContractEvents(); 
@@ -496,56 +509,85 @@
             networkNameEl.textContent = '';
             connectWalletBtn.classList.remove('hidden'); 
             disconnectWalletBtn.classList.add('hidden'); 
-            spinBtn.disabled = true;
+            slotLever.style.cursor = 'not-allowed'; 
             poolBalanceEl.textContent = "0.00 ETH"; 
             spinResultEl.textContent = ""; 
+            actionMessageEl.textContent = "";
         }
 
         async function updatePoolBalance() {
-            if (!tokenPotContract || !tokenPotContract.runner || !tokenPotContract.runner.provider) {
-                console.warn("updatePoolBalance: Kontrat veya provider yüklenmemiş.");
-                return;
+            let tempProvider = provider;
+            if (!tempProvider && window.ethereum) { 
+                try {
+                    tempProvider = new ethers.BrowserProvider(window.ethereum);
+                } catch (e) { console.warn("Genel provider oluşturulamadı."); }
             }
-            try {
-                const currentProvider = tokenPotContract.runner.provider;
-                const balance = await currentProvider.getBalance(YOUR_CONTRACT_ADDRESS);
-                poolBalanceEl.textContent = `${ethers.formatEther(balance)} ETH`;
-            } catch (error) {
-                console.error("Havuz bakiyesi alınamadı:", error);
-                poolBalanceEl.textContent = "Hata!";
+            
+            if (YOUR_CONTRACT_ADDRESS && YOUR_CONTRACT_ADDRESS !== "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN" && tempProvider) {
+                 try {
+                    const balance = await tempProvider.getBalance(YOUR_CONTRACT_ADDRESS);
+                    poolBalanceEl.textContent = `${ethers.formatEther(balance)} ETH`;
+                } catch (error) {
+                    console.error("Havuz bakiyesi alınamadı (genel):", error);
+                    poolBalanceEl.textContent = "Hata!";
+                }
+            } else if (tokenPotContract && tokenPotContract.runner && tokenPotContract.runner.provider) {
+                 try {
+                    const currentProvider = tokenPotContract.runner.provider;
+                    const balance = await currentProvider.getBalance(YOUR_CONTRACT_ADDRESS);
+                    poolBalanceEl.textContent = `${ethers.formatEther(balance)} ETH`;
+                } catch (error) {
+                    console.error("Havuz bakiyesi alınamadı (kontrat):", error);
+                    poolBalanceEl.textContent = "Hata!";
+                }
+            } else {
+                console.warn("updatePoolBalance: Provider veya kontrat bulunamadı/yapılandırılmadı.");
+                poolBalanceEl.textContent = "N/A";
             }
         }
 
-        function spinReelsVisualUpdate(finalSymbolIndices) {
-            let animationCycles = 0;
-            const maxCycles = 10 + Math.floor(Math.random() * 5); 
+        // --- GAME LOGIC ---
+        function animateReel(reelElement, duration, finalSymbolEmoji) {
+            const startTime = Date.now();
+            const initialSymbols = SYMBOLS_EMOJI.slice(); 
 
-            function animate() {
-                reels.forEach((reelEl) => {
-                    const randomSymbolIndex = Math.floor(Math.random() * SYMBOLS_EMOJI.length);
-                    reelEl.textContent = SYMBOLS_EMOJI[randomSymbolIndex];
-                });
-                animationCycles++;
-                if (animationCycles < maxCycles) {
-                    setTimeout(animate, 80); 
+            function spin() {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < duration) {
+                    const randomIndex = Math.floor(Math.random() * initialSymbols.length);
+                    reelElement.textContent = initialSymbols[randomIndex];
+                    requestAnimationFrame(spin);
                 } else {
-                    reels.forEach((reelEl, index) => {
-                        const symbolIndex = finalSymbolIndices[index];
-                        if (symbolIndex !== undefined && symbolIndex < SYMBOLS_EMOJI.length) {
-                           reelEl.textContent = SYMBOLS_EMOJI[symbolIndex];
-                        } else {
-                           console.error("Geçersiz sembol indisi:", symbolIndex, "Makarada:", index);
-                           reelEl.textContent = '❓';
-                        }
-                    });
+                    reelElement.textContent = finalSymbolEmoji;
+                    if (reelsElements.indexOf(reelElement) === reelsElements.length - 1) {
+                        isSpinning = false; 
+                        slotLever.classList.remove('pulled'); 
+                        if (signer) slotLever.style.cursor = 'pointer'; 
+                    }
                 }
             }
-            animate(); 
+            spin();
+        }
+
+        function startReelAnimations(finalSymbolIndices) { 
+            const durations = [1500, 2500, 3500]; 
+            reelsElements.forEach((reelWrapper, index) => {
+                const finalSymbolEmoji = SYMBOLS_EMOJI[finalSymbolIndices[index]] || '❓';
+                animateReel(reelWrapper, durations[index], finalSymbolEmoji);
+            });
         }
 
         async function handleSpin() {
+            if (isSpinning) {
+                showNotification("Bekleyin", "Makaralar zaten dönüyor!");
+                return;
+            }
             if (!tokenPotContract || !signer) {
                 showNotification('Hata', 'Lütfen önce cüzdanınızı bağlayın.');
+                return;
+            }
+             if (YOUR_CONTRACT_ADDRESS === "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN") { // Güvenlik kontrolü
+                showNotification("Yapılandırma Eksik", "Lütfen JavaScript içinde doğru kontrat adresi ve ABI'yi ayarlayın.");
                 return;
             }
 
@@ -554,26 +596,28 @@
                 showNotification('Geçersiz Bahis', 'Lütfen geçerli bir bahis miktarı girin (örn: 0.01).');
                 return;
             }
-            const betAmountEth = parseFloat(betAmountEthString);
-
-            spinBtn.disabled = true;
-            spinResultEl.textContent = "İşlem MetaMask'e gönderiliyor...";
+            
+            isSpinning = true;
+            slotLever.classList.add('pulled'); 
+            slotLever.style.cursor = 'not-allowed';
+            spinResultEl.textContent = ""; 
+            actionMessageEl.textContent = "Para tahsil ediliyor...";
 
             try {
-                const betAmountWei = ethers.parseEther(betAmountEth.toString());
-                
+                const betAmountWei = ethers.parseEther(betAmountEthString.toString());
                 const minBetWei = await tokenPotContract.minimumBet();
                 if (betAmountWei < minBetWei) {
                     showNotification('Düşük Bahis', `Minimum bahis ${ethers.formatEther(minBetWei)} ETH olmalıdır.`);
-                    spinResultEl.textContent = "";
-                    spinBtn.disabled = false;
+                    actionMessageEl.textContent = "";
+                    isSpinning = false;
+                    slotLever.classList.remove('pulled');
+                    if(signer) slotLever.style.cursor = 'pointer';
                     return;
                 }
                 
                 const tx = await tokenPotContract.betAndSpin({ value: betAmountWei });
-                
-                spinResultEl.textContent = "İşlem ağa gönderildi, onay bekleniyor...";
-                showNotification("İşlem Gönderildi", `İşlem ağa gönderildi. Lütfen onaylanmasını bekleyin.`);
+                actionMessageEl.textContent = "İşlem ağa gönderildi, onay bekleniyor...";
+                showNotification("İşlem Gönderildi", `Lütfen işlemin onaylanmasını bekleyin.`);
             } catch (error) {
                 console.error("Spin işlemi hatası:", error);
                 let userMessage = "Spin işlemi sırasında bir hata oluştu.";
@@ -585,48 +629,54 @@
                     userMessage += ` Detay: ${error.message.substring(0,100)}...`
                 }
                 showNotification('İşlem Hatası', userMessage);
-                spinResultEl.textContent = "";
-                spinBtn.disabled = false;
+                actionMessageEl.textContent = "";
+                isSpinning = false;
+                slotLever.classList.remove('pulled');
+                if(signer) slotLever.style.cursor = 'pointer';
             }
         }
 
         function listenForContractEvents() {
             if (!tokenPotContract) return;
-
             tokenPotContract.removeAllListeners("SpinResult");
 
-            tokenPotContract.on("SpinResult", (requestId, player, betAmount, prizeAmount, resultSymbolsIndicesBigInt, event) => {
+            // Yeni Event parametreleri: player, betAmount, didWin, playerPayoutAmount, operatorPayoutAmount, resultSymbolsIndicesBigInt
+            tokenPotContract.on("SpinResult", (player, betAmount, didWin, playerPayoutAmount, operatorPayoutAmount, resultSymbolsIndicesBigInt, event) => {
                 console.log("SpinResult Event Alındı:", { 
-                    requestId, 
                     player, 
                     betAmount: ethers.formatEther(betAmount), 
-                    prizeAmount: ethers.formatEther(prizeAmount), 
+                    didWin,
+                    playerPayoutAmount: ethers.formatEther(playerPayoutAmount),
+                    operatorPayoutAmount: ethers.formatEther(operatorPayoutAmount),
                     resultSymbolsIndicesBigInt, 
                     txHash: event.log.transactionHash 
                 });
 
                 if (player.toLowerCase() === currentUserAddress.toLowerCase()) {
-                    spinBtn.disabled = false;
+                    actionMessageEl.textContent = "Tahsil edildi! Sonuçlar..."; 
                     
                     const finalIndices = resultSymbolsIndicesBigInt.map(index => Number(BigInt(index))); 
-                    spinReelsVisualUpdate(finalIndices);
+                    startReelAnimations(finalIndices); 
 
                     let message = "";
-                    const isWin = BigInt(prizeAmount) > 0n; 
-                    if (isWin) {
-                        message = `🎉 Kazandınız! ${ethers.formatEther(prizeAmount)} ETH 🎉`;
+                    if (didWin) { // Kontrattan gelen 'didWin' boolean değerini kullanıyoruz
+                        message = `🎉 JACKPOT! ${ethers.formatEther(playerPayoutAmount)} ETH Kazandınız! 🎉`;
                     } else {
                         message = `Kaybettiniz. Tekrar Deneyin!`;
                     }
-                    spinResultEl.textContent = message;
+                    
+                    setTimeout(() => { 
+                       spinResultEl.textContent = message; 
+                    }, 3600); // En uzun makara animasyonu süresinden biraz daha fazla bekle
+
                     showNotification("Spin Sonucu", message);
 
                     const txData = {
                         id: event.log.transactionHash,
                         user: player,
                         bet: parseFloat(ethers.formatEther(betAmount)),
-                        win: isWin,
-                        prize: parseFloat(ethers.formatEther(prizeAmount)),
+                        win: didWin, // Kontrattan gelen değeri kullan
+                        prize: parseFloat(ethers.formatEther(playerPayoutAmount)), 
                         symbols: finalIndices.map(index => SYMBOLS_EMOJI[index] || '❓'), 
                         timestamp: new Date().toISOString()
                     };
@@ -634,7 +684,7 @@
                     if (transactions.length > 50) transactions.pop();
                     renderTransactionList();
                     saveLocalTransactions();
-                    updatePoolBalance();
+                    updatePoolBalance(); // Havuz bakiyesini hemen güncelle
                 }
             });
             console.log("SpinResult event dinleyicisi aktif.");
@@ -673,7 +723,7 @@
                         Bahis: ${tx.bet.toFixed(4)} ETH | Semboller: ${tx.symbols.join(' ')} ${prizeText}
                     </div>
                     <div class="mt-1 text-xs">
-                        <a href="https://sepolia.explorer.zksync.io/tx/${tx.id}" target="_blank" class="text-blue-400 hover:text-blue-300">Tx: ${tx.id ? tx.id.substring(0,10) : 'N/A'}...</a>
+                        <a href="${ZKSYNC_SEPOLIA_EXPLORER_URL}tx/${tx.id}" target="_blank" class="text-blue-400 hover:text-blue-300">Tx: ${tx.id ? tx.id.substring(0,10) : 'N/A'}...</a>
                     </div>
                 `;
                 transactionListEl.appendChild(item);
@@ -683,19 +733,27 @@
         // --- EVENT LISTENERS ---
         connectWalletBtn.addEventListener('click', connectWallet);
         disconnectWalletBtn.addEventListener('click', disconnectWalletLogic); 
-        spinBtn.addEventListener('click', handleSpin);
+        slotLever.addEventListener('click', () => { 
+            if (!isSpinning && signer) { 
+                handleSpin();
+            } else if (!signer) {
+                showNotification("Hata", "Lütfen önce cüzdanınızı bağlayın.");
+            }
+        });
 
         // --- INITIALIZATION ---
         window.addEventListener('load', () => {
             loadLocalTransactions();
             disconnectWalletBtn.classList.add('hidden'); 
+            slotLever.style.cursor = 'not-allowed'; 
+            updatePoolBalance(); 
 
             if (window.ethereum) {
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length === 0) {
                         showNotification('Hesap Bağlantısı Kesildi', 'MetaMask ile bağlantınız kesildi.');
                     } else {
-                        showNotification('Hesap Değişti', 'MetaMask hesabı değişti. Lütfen cüzdanı tekrar bağlayın veya sayfayı yenileyin.');
+                        showNotification('Hesap Değişti', 'MetaMask hesabı değişti.');
                     }
                     disconnectWalletLogic();
                 });
@@ -706,11 +764,16 @@
                         showNotification('Ağ Değişti', `Lütfen MetaMask ağınızı ${TARGET_NETWORK_NAME} ağına geri değiştirin.`);
                         disconnectWalletLogic();
                     } else {
-                        if(window.ethereum.selectedAddress && !signer) { // Eğer seçili adres varsa ama biz bağlı değilsek (sayfa yenilenmiş olabilir)
+                        if(window.ethereum.selectedAddress && !signer) { 
                            await connectWallet();
                         }
                     }
                 });
+
+                // Sayfa yüklendiğinde bağlı olan bir hesap varsa otomatik bağlanmayı dene
+                if (window.ethereum.selectedAddress) {
+                    connectWallet();
+                }
             }
         });
     </script>
