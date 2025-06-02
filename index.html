@@ -75,8 +75,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: transform 0.15s ease-in-out; /* Daha hızlı geçiş */
-            transform-origin: top center; /* Dönüş/hareket noktası üst orta */
+            transition: transform 0.15s ease-in-out; 
+            transform-origin: top center; 
         }
         .lever-handle {
             width: 40px;
@@ -91,7 +91,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         .slot-lever.pulled {
-            transform: translateY(25px) scaleY(0.9); /* Aşağı çekme efekti */
+            transform: translateY(25px) scaleY(0.9); 
         }
         .connect-wallet-btn, .history-link-btn, .disconnect-wallet-btn {
             background: linear-gradient(to right, #7f00ff, #e100ff); 
@@ -215,7 +215,7 @@
 
     <script>
         // --- CONFIGURATION ---
-        const YOUR_CONTRACT_ADDRESS = "0x094AC1e7b14804a1109C5A119F5F5fB27f1E94Ff"; 
+        const YOUR_CONTRACT_ADDRESS = "0x9C479BDA6a1e4c0bD054A3cf1dd10499BBaD0219"; 
         const YOUR_CONTRACT_ABI = [
             {
                 "inputs": [
@@ -337,7 +337,7 @@
                 "stateMutability": "nonpayable",
                 "type": "function"
             }
-        ];
+        ]; 
         
         const TARGET_CHAIN_ID_DECIMAL = '300'; 
         const TARGET_CHAIN_ID_HEX = '0x12c'; 
@@ -474,11 +474,6 @@
                     connectWalletBtn.classList.add('hidden'); 
                     disconnectWalletBtn.classList.remove('hidden'); 
                     
-                    if (YOUR_CONTRACT_ADDRESS === "YENI_KONTRAKT_ADRESINIZI_BURAYA_YAPISTIRIN" || YOUR_CONTRACT_ABI.length === 0) {
-                        showNotification("Konfigürasyon Eksik", "Lütfen JavaScript içinde kontrat adresi ve ABI'yi güncelleyin.");
-                        slotLever.style.cursor = 'not-allowed';
-                        return;
-                    }
                     tokenPotContract = new ethers.Contract(YOUR_CONTRACT_ADDRESS, YOUR_CONTRACT_ABI, signer);
                     slotLever.style.cursor = 'pointer'; 
                     showNotification('Başarılı', 'Cüzdan başarıyla bağlandı ve kontrat yüklendi!');
@@ -558,10 +553,8 @@
             const startTime = Date.now();
             const initialSymbols = SYMBOLS_EMOJI.slice(); 
 
-            // Önceki animasyonu temizle (varsa)
             if (reelAnimationTimeoutIds[reelIndex]) {
-                clearTimeout(reelAnimationTimeoutIds[reelIndex]); // setTimeout kullanıyorsak
-                // Veya cancelAnimationFrame(reelAnimationTimeoutIds[reelIndex]) eğer rAF kullanıyorsak
+                cancelAnimationFrame(reelAnimationTimeoutIds[reelIndex]); 
             }
 
             function spin() {
@@ -569,18 +562,17 @@
                 if (elapsedTime < duration) {
                     const randomIndex = Math.floor(Math.random() * initialSymbols.length);
                     reelElement.textContent = initialSymbols[randomIndex];
-                    reelAnimationTimeoutIds[reelIndex] = requestAnimationFrame(spin); // rAF kullanıyoruz
+                    reelAnimationTimeoutIds[reelIndex] = requestAnimationFrame(spin); 
                 } else {
                     reelElement.textContent = finalSymbolEmoji;
-                    if (reelIndex === reelsElements.length - 1) { // Son makara durduğunda
+                    if (reelIndex === reelsElements.length - 1) { 
                         isSpinning = false; 
                         slotLever.classList.remove('pulled'); 
                         if (signer) slotLever.style.cursor = 'pointer'; 
                         
-                        // Sonuçları ve bildirimi burada göster
                         spinResultEl.textContent = winInfo.message;
                         showNotification("Spin Sonucu", winInfo.message);
-                        actionMessageEl.textContent = ""; // Aksiyon mesajını temizle
+                        actionMessageEl.textContent = ""; 
                     }
                 }
             }
@@ -670,12 +662,11 @@
                 });
 
                 if (player.toLowerCase() === currentUserAddress.toLowerCase()) {
-                    actionMessageEl.textContent = "Tahsil edildi! Sonuçlar işleniyor..."; 
+                    actionMessageEl.textContent = "Tahsil edildi! Sonuçlar..."; 
                     
                     const finalIndices = resultSymbolsIndicesBigInt.map(index => Number(BigInt(index))); 
                     const winMessage = didWin ? `🎉 JACKPOT! ${ethers.formatEther(playerPayoutAmount)} ETH Kazandınız! 🎉` : `Kaybettiniz. Tekrar Deneyin!`;
                     
-                    // Kazanma bilgisini ve mesajı animasyon fonksiyonuna aktar
                     startReelAnimations(finalIndices, { didWin, message: winMessage }); 
 
                     const txData = {
@@ -777,11 +768,8 @@
                     }
                 });
                 
-                // Sayfa yüklendiğinde bağlı olan bir hesap varsa otomatik bağlanmayı dene
-                // Bu, kullanıcı deneyimini iyileştirebilir ancak bazen istenmeyen pop-up'lara neden olabilir.
-                // Eğer bir cüzdan zaten seçiliyse (örneğin sayfa yenilendiğinde) otomatik bağlan.
                 if (window.ethereum.selectedAddress) {
-                     setTimeout(connectWallet, 200); // Küçük bir gecikme ile dene
+                     setTimeout(connectWallet, 200); 
                 }
             }
         });
