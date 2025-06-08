@@ -104,9 +104,9 @@
     <div id="notificationModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"><div class="holographic-display p-8 rounded-xl max-w-sm w-full text-center"><h3 id="modalTitle" class="font-orbitron text-2xl mb-4"></h3><p id="modalMessage" class="mb-6"></p><button id="closeModalBtn" class="bg-pink-500 px-6 py-2 rounded-lg font-bold hover:bg-pink-600">Kapat</button></div></div>
 
     <script>
-        // --- BU ALANLARI DEPLOY SONRASI GÜNCELLEYİN ---
-        const contractAddress = "YENI_KONTRAT_ADRESINIZ_BURAYA_GELECEK";
-        const contractABI = [ /* YENI_ABI_BILGINIZ_BURAYA_GELECEK */ ];
+        // --- BU ALANLAR OTOMATİK OLARAK GÜNCELLENDİ ---
+        const contractAddress = "0x43b3e2E65621fEf3b368b085a638A2f5769ab15F";
+        const contractABI = [ { "inputs": [ { "internalType": "address", "name": "vrfCoordinatorV2", "type": "address" }, { "internalType": "uint256", "name": "subscriptionId", "type": "uint256" }, { "internalType": "bytes32", "name": "keyHash", "type": "bytes32" } ], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [ { "internalType": "address", "name": "have", "type": "address" }, { "internalType": "address", "name": "want", "type": "address" } ], "name": "OnlyCoordinatorCanFulfill", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "owner", "type": "address" } ], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "account", "type": "address" } ], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "winner", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "JackpotWon", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "player", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }, { "indexed": false, "internalType": "bool", "name": "won", "type": "bool" }, { "indexed": false, "internalType": "uint8[3]", "name": "symbols", "type": "uint8[3]" } ], "name": "SpinFulfilled", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "player", "type": "address" } ], "name": "SpinRequested", "type": "event" }, { "inputs": [], "name": "GAME_FEE_PERCENT", "outputs": [ { "internalType": "uint8", "name": "", "type": "uint8" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "feeBalance", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "count", "type": "uint256" } ], "name": "getLatestSpins", "outputs": [ { "components": [ { "internalType": "address", "name": "player", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "bool", "name": "won", "type": "bool" }, { "internalType": "uint8[3]", "name": "symbols", "type": "uint8[3]" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "internalType": "struct CosmicJackpot.SpinResult[]", "name": "", "type": "tuple[]" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "jackpotBalance", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "internalType": "uint256[]", "name": "randomWords", "type": "uint256[]" } ], "name": "rawFulfillRandomWords", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "s_requestIdToPlayer", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "s_spinHistory", "outputs": [ { "internalType": "address", "name": "player", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "bool", "name": "won", "type": "bool" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "spin", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "withdrawFees", "outputs": [], "stateMutability": "nonpayable", "type": "function" } ];
         // --------------------------------------------------
 
         const baseSepoliaChainId = '0x14a34';
@@ -185,9 +185,8 @@
         async function updateUIForConnectedUser() {
             if(!userAddress) return;
             connectWalletBtn.textContent = `${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`;
-            // Cüzdan bağlandıktan sonra tüm verileri güncelle
-            updatePublicData(provider); // Jackpot ve geçmişi güncelle
-            updatePlayerWalletBalance(); // Kullanıcı bakiyesini güncelle
+            updatePublicData(provider); 
+            updatePlayerWalletBalance();
         }
 
         async function updatePlayerWalletBalance() {
@@ -201,7 +200,7 @@
         }
         
         async function spin() {
-            if (!contract) return showNotification('Uyarı', 'Lütfen önce cüzdanınızı bağlayın ve kontratın ayarlandığından emin olun.');
+            if (!contract) return showNotification('Uyarı', 'Lütfen önce cüzdanınızı bağlayın.');
             const amount = spinAmountInput.value;
             if (!amount || parseFloat(amount) <= 0) return showNotification('Hata', 'Lütfen geçerli bir miktar girin.');
             try {
@@ -247,10 +246,7 @@
         }
         
         async function updatePublicData(providerInstance) {
-            if (!providerInstance) {
-                console.error("updatePublicData provider olmadan çağrıldı.");
-                return;
-            }
+            if (!providerInstance) return;
              if (!contractAddress.startsWith('0x') || contractABI.length === 0) {
                  txHistoryEl.innerHTML = '<p class="text-center text-gray-400">Kontrat bilgileri eksik.</p>';
                  return;
@@ -258,13 +254,11 @@
 
             const readContract = new ethers.Contract(contractAddress, contractABI, providerInstance);
 
-            // Jackpot'u güncelle
             try {
                 const jackpot = await readContract.jackpotBalance();
                 jackpotAmountEl.textContent = ethers.utils.formatEther(jackpot).substring(0, 7);
             } catch (error) { console.error("Jackpot güncelleme hatası:", error); }
             
-            // Geçmişi güncelle
             try {
                 const history = await readContract.getLatestSpins(3);
                 txHistoryEl.innerHTML = history.length === 0 ? '<p class="text-center text-gray-400">Henüz işlem yok.</p>' : '';
@@ -282,14 +276,11 @@
             }
         }
 
-        functioninitializeApp() {
-            // Ethers.js'nin yüklenip yüklenmediğini kontrol et
+        function initializeApp() {
             if (typeof window.ethers !== 'undefined') {
                 const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://sepolia.base.org");
                 updatePublicData(readOnlyProvider);
             } else {
-                console.error("Ethers.js yüklenemedi. 1 saniye sonra tekrar denenecek.");
-                // Eğer hemen yüklenmezse, kısa bir gecikmeyle tekrar dene
                 setTimeout(initializeApp, 1000);
             }
         }
@@ -300,7 +291,6 @@
         spinBtn.addEventListener('click', spin);
         prophecyBtn.addEventListener('click', getCosmicProphecy);
         
-        // Hata veren eski listener yerine bunu kullan
         window.addEventListener('load', initializeApp);
     </script>
 </body>

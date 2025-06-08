@@ -3,7 +3,8 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
+  // DÜZELTME: Solidity sürümü, kontratlarla uyumlu olması için "0.8.20" olarak güncellendi.
+  solidity: "0.8.20",
   networks: {
     baseSepolia: {
       url: process.env.BASE_SEPOLIA_RPC_URL || "",

@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-// --- SON DÜZELTME: Tüm Chainlink import yolları, doğru olan /src/ klasörünü içerecek şekilde güncellendi ---
-import {VRFCoordinatorV2_5Interface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2_5Interface.sol";
-import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
+import "./VRFCoordinatorV2Interface.sol";
+import "./VRFConsumerBaseV2.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title CosmicJackpot
- * @notice A Web3 space-themed slot game using Chainlink VRF v2.5 for fairness.
- * @dev Designed for Base Sepolia testnet.
+ * @notice A Web3 space-themed slot game using Chainlink VRF for fairness.
+ * @dev Imports Chainlink contracts locally to bypass environment issues.
  */
 contract CosmicJackpot is VRFConsumerBaseV2, Ownable {
     // --- Events ---
@@ -25,9 +23,8 @@ contract CosmicJackpot is VRFConsumerBaseV2, Ownable {
     event JackpotWon(address indexed winner, uint256 amount);
 
     // --- State Variables ---
-
-    VRFCoordinatorV2_5Interface private immutable i_vrfCoordinator;
-    uint64 private immutable i_subscriptionId;
+    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
+    uint256 private immutable i_subscriptionId; 
     bytes32 private immutable i_keyHash;
     uint32 private immutable i_callbackGasLimit = 100000;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
@@ -44,31 +41,23 @@ contract CosmicJackpot is VRFConsumerBaseV2, Ownable {
     // Spin History
     struct SpinResult {
         address player;
-        uint256 amount; // Jackpot size at the time of spin
+        uint256 amount;
         bool won;
         uint8[3] symbols;
         uint256 timestamp;
     }
     SpinResult[] public s_spinHistory;
 
-    /**
-     * @param vrfCoordinatorV2 Base Sepolia VRF v2.5 Coordinator address
-     * @param subscriptionId Your Chainlink VRF v2.5 subscription ID
-     * @param keyHash The gas lane key hash
-     */
     constructor(
         address vrfCoordinatorV2,
-        uint64 subscriptionId,
+        uint256 subscriptionId, 
         bytes32 keyHash
     ) VRFConsumerBaseV2(vrfCoordinatorV2) Ownable(msg.sender) {
-        i_vrfCoordinator = VRFCoordinatorV2_5Interface(vrfCoordinatorV2);
+        i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
         i_subscriptionId = subscriptionId;
         i_keyHash = keyHash;
     }
 
-    /**
-     * @notice Allows a player to spin the slot machine by sending ETH.
-     */
     function spin() external payable {
         require(msg.value > 0.00001 ether, "Spin value too low");
 
@@ -76,9 +65,10 @@ contract CosmicJackpot is VRFConsumerBaseV2, Ownable {
         jackpotBalance += (msg.value - feeAmount);
         feeBalance += feeAmount;
 
+        // DÜZELTME: i_subscriptionId, fonksiyona geçilirken uint64'e dönüştürüldü.
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_keyHash,
-            i_subscriptionId,
+            uint64(i_subscriptionId),
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             NUM_WORDS
@@ -88,9 +78,6 @@ contract CosmicJackpot is VRFConsumerBaseV2, Ownable {
         emit SpinRequested(requestId, msg.sender);
     }
 
-    /**
-     * @notice Callback function for Chainlink VRF to deliver the random result.
-     */
     function fulfillRandomWords(
         uint256 _requestId,
         uint256[] memory _randomWords
