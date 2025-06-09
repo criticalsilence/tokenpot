@@ -141,8 +141,13 @@
             prophecyBtn.disabled = true;
             prophecyBtn.innerHTML = 'Yükleniyor...';
             const prompt = "Bir web3 slot oyunu için kısa, gizemli, tek cümlelik, uzay temalı bir kehanet oluştur. Örneğin: 'Satürn'ün halkaları senin lehine hizalanıyor.'";
+            
+            // DÜZELTME: Gemini API'ye istek atmak için doğru URL formatı kullanıldı.
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`, {
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
@@ -162,7 +167,9 @@
         }
 
         async function connectWallet() {
-            if (typeof window.ethereum === 'undefined') return showNotification('Hata', 'Lütfen MetaMask cüzdanını yükleyin.');
+            if (typeof window.ethereum === 'undefined' || typeof window.ethers === 'undefined') {
+                 return showNotification('Hata', 'Lütfen MetaMask cüzdanını yükleyin ve sayfanın tamamen yüklendiğinden emin olun.');
+            }
             try {
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 const network = await provider.getNetwork();
@@ -170,6 +177,9 @@
                     await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: baseSepoliaChainId }] }).catch(() => {
                         throw new Error('Lütfen manuel olarak Base Sepolia ağına geçin.');
                     });
+                     // Sayfayı yeniden yükleyerek doğru ağa geçişi tamamla
+                    window.location.reload();
+                    return;
                 }
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 signer = provider.getSigner();
@@ -283,25 +293,16 @@
         function initializeApp() {
             // DÜZELTME: Buton başlangıçta devre dışı bırakıldı.
             connectWalletBtn.disabled = true;
-
-            if (typeof window.ethers !== 'undefined') {
-                const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://sepolia.base.org");
-                updatePublicData(readOnlyProvider);
-                // DÜZELTME: Buton, ethers yüklendiğinde aktif hale getirildi.
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.textContent = 'Cüzdanı Bağla';
-            } else {
-                setTimeout(initializeApp, 500);
-            }
+            
+            // DÜZELTME: ethers.js'nin yüklenmesini beklemek için daha sağlam bir kontrol eklendi.
+            const interval = setInterval(() => {
+                if (typeof window.ethers !== 'undefined') {
+                    clearInterval(interval);
+                    const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://sepolia.base.org");
+                    updatePublicData(readOnlyProvider);
+                    connectWalletBtn.disabled = false;
+                    connectWalletBtn.textContent = 'Cüzdanı Bağla';
+                    console.log("Ethers.js yüklendi, uygulama hazır.");
+                }
+            }, 200); // Her 200 milisaniyede bir kontrol et
         }
-        
-        window.ethereum?.on('accountsChanged', connectWallet);
-        window.ethereum?.on('chainChanged', () => window.location.reload());
-        connectWalletBtn.addEventListener('click', connectWallet);
-        spinBtn.addEventListener('click', spin);
-        prophecyBtn.addEventListener('click', getCosmicProphecy);
-        
-        window.addEventListener('load', initializeApp);
-    </script>
-</body>
-</html>
