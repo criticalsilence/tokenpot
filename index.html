@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kozmik Jackpot - Web3 Slot Oyunu</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.ethers.io/lib/ethers-5.6.umd.min.js"></script>
+    <!-- DÜZELTME: Ethers.js script etiketi, JavaScript içinden daha güvenilir bir şekilde yüklenmesi için buradan kaldırıldı. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;400;700&display=swap" rel="stylesheet">
@@ -55,7 +55,6 @@
             border: 1px solid #38bdf8;
             box-shadow: 0 0 10px #38bdf880;
         }
-        /* Devre dışı bırakılmış butonlar için stil */
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -76,7 +75,7 @@
             <h1 class="font-orbitron text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
                 Kozmik Jackpot
             </h1>
-            <button id="connectWalletBtn" class="holographic-display px-4 py-2 rounded-lg font-bold hover:border-pink-500">
+            <button id="connectWalletBtn" class="holographic-display px-4 py-2 rounded-lg font-bold hover:border-pink-500" disabled>
                 Yükleniyor...
             </button>
         </header>
@@ -94,8 +93,8 @@
             </div>
             <div class="flex flex-col sm:flex-row items-stretch justify-center gap-4">
                  <input id="spinAmountInput" type="number" step="0.01" min="0.01" placeholder="0.01" class="bg-black/30 border border-purple-500/50 rounded-lg px-4 py-3 text-center w-full sm:w-48 text-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
-                 <button id="spinBtn" class="spin-handle flex-grow px-10 py-4 rounded-xl text-2xl font-orbitron font-bold text-white uppercase">SPIN</button>
-                 <button id="prophecyBtn" class="prophecy-btn flex-grow sm:flex-grow-0 px-6 py-4 rounded-xl text-lg font-orbitron font-bold text-white uppercase flex items-center justify-center"><span class="mr-2 text-xl">✨</span> Kozmik Kehanet</button>
+                 <button id="spinBtn" class="spin-handle flex-grow px-10 py-4 rounded-xl text-2xl font-orbitron font-bold text-white uppercase" disabled>SPIN</button>
+                 <button id="prophecyBtn" class="prophecy-btn flex-grow sm:flex-grow-0 px-6 py-4 rounded-xl text-lg font-orbitron font-bold text-white uppercase flex items-center justify-center" disabled><span class="mr-2 text-xl">✨</span> Kozmik Kehanet</button>
             </div>
         </div>
         <!-- HISTORY & FOOTER -->
@@ -110,11 +109,15 @@
     <div id="notificationModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"><div class="holographic-display p-8 rounded-xl max-w-sm w-full text-center"><h3 id="modalTitle" class="font-orbitron text-2xl mb-4"></h3><p id="modalMessage" class="mb-6"></p><button id="closeModalBtn" class="bg-pink-500 px-6 py-2 rounded-lg font-bold hover:bg-pink-600">Kapat</button></div></div>
 
     <script>
+        // --- KULLANICI AYARLARI ---
+        const geminiApiKey = "AIzaSyB1dknR02KFHVMwnjw1xevu_Te1v15NAW4"; 
+        // -------------------------
+
         const contractAddress = "0x43b3e2E65621fEf3b368b085a638A2f5769ab15F";
         const contractABI = [ { "inputs": [ { "internalType": "address", "name": "vrfCoordinatorV2", "type": "address" }, { "internalType": "uint256", "name": "subscriptionId", "type": "uint256" }, { "internalType": "bytes32", "name": "keyHash", "type": "bytes32" } ], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [ { "internalType": "address", "name": "have", "type": "address" }, { "internalType": "address", "name": "want", "type": "address" } ], "name": "OnlyCoordinatorCanFulfill", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "owner", "type": "address" } ], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "account", "type": "address" } ], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "winner", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "JackpotWon", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "player", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }, { "indexed": false, "internalType": "bool", "name": "won", "type": "bool" }, { "indexed": false, "internalType": "uint8[3]", "name": "symbols", "type": "uint8[3]" } ], "name": "SpinFulfilled", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "player", "type": "address" } ], "name": "SpinRequested", "type": "event" }, { "inputs": [], "name": "GAME_FEE_PERCENT", "outputs": [ { "internalType": "uint8", "name": "", "type": "uint8" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "feeBalance", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "count", "type": "uint256" } ], "name": "getLatestSpins", "outputs": [ { "components": [ { "internalType": "address", "name": "player", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "bool", "name": "won", "type": "bool" }, { "internalType": "uint8[3]", "name": "symbols", "type": "uint8[3]" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "internalType": "struct CosmicJackpot.SpinResult[]", "name": "", "type": "tuple[]" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "jackpotBalance", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "requestId", "type": "uint256" }, { "internalType": "uint256[]", "name": "randomWords", "type": "uint256[]" } ], "name": "rawFulfillRandomWords", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "s_requestIdToPlayer", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "s_spinHistory", "outputs": [ { "internalType": "address", "name": "player", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "bool", "name": "won", "type": "bool" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "spin", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "withdrawFees", "outputs": [], "stateMutability": "nonpayable", "type": "function" } ];
         
         const baseSepoliaChainId = '0x14a34';
-        const symbols = ['🌟', '🪐', '�', '☄️'];
+        const symbols = ['🌟', '🪐', '🚀', '☄️'];
         let provider, signer, contract, userAddress;
 
         const connectWalletBtn = document.getElementById('connectWalletBtn');
@@ -138,12 +141,14 @@
         closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
         async function getCosmicProphecy() {
+            if (!geminiApiKey || geminiApiKey === "YAPAY_ZEKA_API_ANAHTARINIZI_BURAYA_YAPISTIRIN") {
+                return showNotification("API Anahtarı Gerekli", "Bu özelliği kullanmak için lütfen kod dosyasındaki 'geminiApiKey' değişkenine geçerli bir anahtar girin.");
+            }
             prophecyBtn.disabled = true;
             prophecyBtn.innerHTML = 'Yükleniyor...';
             const prompt = "Bir web3 slot oyunu için kısa, gizemli, tek cümlelik, uzay temalı bir kehanet oluştur. Örneğin: 'Satürn'ün halkaları senin lehine hizalanıyor.'";
             
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -199,7 +204,7 @@
             connectWalletBtn.textContent = `${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`;
             updatePublicData(provider); 
             updatePlayerWalletBalance();
-            spinBtn.disabled = false; // DÜZELTME: Spin butonu cüzdan bağlanınca aktif edilir.
+            spinBtn.disabled = false;
         }
 
         async function updatePlayerWalletBalance() {
@@ -222,8 +227,18 @@
                 startReelAnimation();
                 showNotification('İşlem Gönderildi', `Spin işlemi gönderildi. Sonuç bekleniyor...`);
             } catch (error) {
+                console.error("Spin hatası:", error);
                 stopReelAnimation(['❓','❓','❓']);
-                showNotification('Hata', `Spin işlemi başarısız: ${error.reason || error.message}`);
+                let userMessage = "İşlem bilinmeyen bir nedenle başarısız oldu.";
+                const errorMessage = error.reason || error.data?.message || error.message || "";
+                if (errorMessage.includes("insufficient funds")) {
+                    userMessage = "Cüzdanınızda bu işlem için yeterli ETH yok.";
+                } else if (errorMessage.includes("user rejected transaction")) {
+                    userMessage = "İşlemi cüzdanınızda reddettiniz.";
+                } else {
+                    userMessage = "İşlem geri çevrildi (reverted). Lütfen Chainlink VRF aboneliğinizin yeterli LINK içerdiğini ve kontrat adresinizin 'Tüketici' olarak eklendiğini kontrol edin.";
+                }
+                showNotification('Hata: Spin Başarısız', userMessage);
             }
         }
 
@@ -237,7 +252,7 @@
         function stopReelAnimation(finalSymbols) {
             clearInterval(reelInterval);
             finalSymbols.forEach((symbolIndex, i) => reels[i].textContent = symbols[symbolIndex]);
-            spinBtn.disabled = false;
+            if(signer) spinBtn.disabled = false;
             spinBtn.textContent = "SPIN";
         }
         
@@ -260,7 +275,7 @@
         
         async function updatePublicData(providerInstance) {
             if (!providerInstance) return;
-             if (!contractAddress.startsWith('0x') || contractABI.length === 0) {
+             if (!contractAddress.startsWith('0x') || contractABI.length < 5) {
                  txHistoryEl.innerHTML = '<p class="text-center text-gray-400">Kontrat bilgileri eksik.</p>';
                  return;
             }
@@ -289,30 +304,48 @@
             }
         }
 
-        function initializeApp() {
-            // Başlangıçta tüm butonlar devre dışı
-            connectWalletBtn.disabled = true;
-            spinBtn.disabled = true;
-            prophecyBtn.disabled = true;
-            
-            const interval = setInterval(() => {
-                if (typeof window.ethers !== 'undefined') {
-                    clearInterval(interval);
-                    const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://sepolia.base.org");
-                    updatePublicData(readOnlyProvider);
-                    
-                    // Kehanet ve Cüzdan butonlarını aktif et
-                    prophecyBtn.disabled = false;
-                    if (typeof window.ethereum !== 'undefined') {
-                         connectWalletBtn.disabled = false;
-                         connectWalletBtn.textContent = 'Cüzdanı Bağla';
-                    } else {
-                        connectWalletBtn.textContent = 'MetaMask Gerekli';
-                        showNotification('MetaMask Gerekli', 'Bu uygulamayı kullanmak için lütfen MetaMask cüzdan eklentisini kurun.');
-                    }
-                    console.log("Ethers.js yüklendi, uygulama hazır.");
+        // DÜZELTME: Daha sağlam kütüphane yükleme mantığı
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve(script);
+                script.onerror = () => reject(new Error(`Script load error for ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        async function initializeApp() {
+            try {
+                // Ethers.js'yi birincil kaynaktan yüklemeyi dene
+                await loadScript('https://cdn.ethers.io/lib/ethers-5.6.umd.min.js');
+                console.log("Ethers.js birincil kaynaktan başarıyla yüklendi.");
+            } catch (error) {
+                console.warn(error.message, "Yedek kaynak deneniyor...");
+                try {
+                    // Başarısız olursa yedek kaynaktan yüklemeyi dene
+                    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/ethers/5.6.9/ethers.umd.min.js');
+                    console.log("Ethers.js yedek kaynaktan başarıyla yüklendi.");
+                } catch (fallbackError) {
+                    console.error("Ethers.js hem birincil hem de yedek kaynaklardan yüklenemedi.", fallbackError);
+                    connectWalletBtn.textContent = 'Hata: Yenileyin';
+                    showNotification('Yükleme Hatası', 'Gerekli kütüphaneler yüklenemedi. Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.');
+                    return;
                 }
-            }, 200); 
+            }
+
+            // Kütüphane yüklendikten sonra uygulamayı başlat
+            prophecyBtn.disabled = false;
+            const readOnlyProvider = new ethers.providers.JsonRpcProvider("https://sepolia.base.org");
+            updatePublicData(readOnlyProvider);
+
+            if (typeof window.ethereum !== 'undefined') {
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Cüzdanı Bağla';
+            } else {
+                connectWalletBtn.textContent = 'MetaMask Gerekli';
+                showNotification('MetaMask Gerekli', 'Bu uygulamayı kullanmak için lütfen MetaMask cüzdan eklentisini kurun.');
+            }
         }
         
         window.ethereum?.on('accountsChanged', connectWallet);
